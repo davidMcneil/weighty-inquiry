@@ -15,9 +15,10 @@ use rocket::{
 };
 use rocket_contrib::{json::Json, serve::StaticFiles};
 use rocket_cors::{AllowedOrigins, CorsOptions};
+use std::collections::HashMap;
 use std::path::PathBuf;
 use structopt::StructOpt;
-use types::{Answer, Game, Guess, PlayerData, Result};
+use types::{Answer, Game, Guess, Player, PlayerData, Result};
 
 type Games = Mutex<types::Games>;
 type Questions = Mutex<QuestionLookup>;
@@ -98,6 +99,13 @@ fn delete_game(game_id: String, games: State<Games>) {
     games.delete(&game_id)
 }
 
+#[get("/game/<game_id>/score")]
+fn get_score(game_id: String, games: State<Games>) -> Result<Json<HashMap<Player, i32>>> {
+    let mut games = games.lock();
+    let game = games.get(&game_id)?.clone();
+    Ok(Json(game.get_score()))
+}
+
 fn rocket(opt: Option<Opt>) -> rocket::Rocket {
     let mut questions = QuestionLookup::default();
     let rocket = if let Some(opt) = opt {
@@ -135,7 +143,7 @@ fn rocket(opt: Option<Opt>) -> rocket::Rocket {
     rocket::ignite().attach(cors.to_cors().unwrap());
     rocket
         .attach(cors.to_cors().unwrap())
-        .mount("/", StaticFiles::from("../client/"))
+        .mount("/", StaticFiles::from("../client-svelte/build/index.html"))
         .mount(
             "/api/v1",
             routes![
@@ -146,7 +154,8 @@ fn rocket(opt: Option<Opt>) -> rocket::Rocket {
                 answer,
                 guess,
                 exit_game,
-                delete_game
+                delete_game,
+                get_score,
             ],
         )
         .manage(Mutex::new(questions))

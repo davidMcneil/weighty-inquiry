@@ -75,12 +75,12 @@ impl PlayerData {
     }
 }
 
-#[derive(Clone, Deserialize, Serialize)]
+#[derive(Debug, Clone, Deserialize, Serialize, PartialEq, Eq, Hash)]
 pub(crate) struct Answer {
     /// The player who gave the answer
     player: Player,
     /// The answer to the question for the round
-    answer: String,
+    pub answer: String,
 }
 
 #[cfg(test)]
@@ -93,12 +93,12 @@ impl Answer {
     }
 }
 
-#[derive(Clone, Deserialize, Serialize)]
+#[derive(Debug, Clone, Deserialize, Serialize)]
 pub(crate) struct Guess {
     /// The player making the guess
-    player: Player,
+    pub player: Player,
     /// The list of guessed answers, one per player
-    answers: HashSet<Answer>,
+    pub answers: HashSet<Answer>,
 }
 
 #[cfg(test)]
@@ -247,6 +247,22 @@ impl Game {
         let players = self.players.len();
         let round = self.current_round();
         round.state(players)
+    }
+
+    pub fn get_score(&self) -> HashMap<String, i32> {
+        let mut scores = HashMap::new();
+        let game = self.clone();
+        for round in game.rounds {
+            for guess in round.guesses {
+                for answer in guess.answers {
+                    let score = scores.entry(guess.player.clone()).or_insert(0);
+                    if round.answers.contains(&answer) {
+                        *score += 1;
+                    }
+                }
+            }
+        }
+        scores
     }
 }
 
