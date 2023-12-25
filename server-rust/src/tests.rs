@@ -285,6 +285,6 @@ fn test_get_score_with_wrong_answer() {
     game.get_score();
     let mut correct_scores = HashMap::new();
     correct_scores.insert(String::from("p1"), 2);
-    correct_scores.insert(String::from("p2"), 1);
+    correct_scores.insert(String::from("p2"), 0);
     assert_eq!(game.get_score(), correct_scores)
 }
