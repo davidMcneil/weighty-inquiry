@@ -6,6 +6,7 @@ use std::iter::FromIterator;
 use std::{
     collections::{HashMap, HashSet},
     error, fmt,
+    ops::Deref,
 };
 
 pub(crate) type Result<T> = std::result::Result<T, Error>;
@@ -93,12 +94,45 @@ impl Answer {
     }
 }
 
-#[derive(Debug, Clone, Deserialize, Serialize)]
+#[derive(Debug, Clone, Deserialize, Serialize, PartialEq, Eq, Hash)]
+pub(crate) struct Answers(Vec<Answer>);
+
+impl Deref for Answers {
+    type Target = Vec<Answer>;
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
+
+impl From<Vec<Answer>> for Answers {
+    fn from(value: Vec<Answer>) -> Self {
+        let mut unique_answers = Vec::new();
+        let mut seen_players = std::collections::HashSet::new();
+        for answer in value {
+            if seen_players.insert(answer.player.clone()) {
+                unique_answers.push(answer);
+            }
+        }
+        Answers(unique_answers)
+    }
+}
+
+impl IntoIterator for Answers {
+    type Item = Answer;
+    type IntoIter = std::vec::IntoIter<Answer>;
+
+    fn into_iter(self) -> Self::IntoIter {
+        self.0.into_iter()
+    }
+}
+
+#[derive(Debug, Clone, Deserialize, Serialize, PartialEq, Eq, Hash)]
 pub(crate) struct Guess {
     /// The player making the guess
     pub player: Player,
     /// The list of guessed answers, one per player
-    pub answers: HashSet<Answer>,
+    pub answers: Answers,
 }
 
 #[cfg(test)]
@@ -106,7 +140,7 @@ impl Guess {
     pub(crate) fn new(player: &str, guess: Vec<Answer>) -> Self {
         Self {
             player: Player::from(player),
-            answers: HashSet::from_iter(guess),
+            answers: Answers::from(guess),
         }
     }
 }
@@ -212,7 +246,7 @@ impl Game {
             return Err(Error::RoundNotInCollectingGuessesState);
         }
         // Confirm the guesses are valid
-        for g in &guess.answers {
+        for g in guess.answers.iter() {
             if !self.players.contains(&g.player) {
                 return Err(Error::GuessedPlayerNotFound);
             }
@@ -254,7 +288,7 @@ impl Game {
         let game = self.clone();
         for round in game.rounds {
             for guess in round.guesses {
-                for answer in guess.answers {
+                for answer in guess.answers.iter() {
                     let score = scores.entry(guess.player.clone()).or_insert(0);
                     if round.answers.contains(&answer) {
                         *score += 1;
