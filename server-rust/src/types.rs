@@ -1,8 +1,6 @@
 mod traits;
 
 use serde::{Deserialize, Serialize};
-#[cfg(test)]
-use std::iter::FromIterator;
 use std::{
     collections::{HashMap, HashSet},
     error, fmt,
@@ -55,8 +53,8 @@ pub(crate) struct BadRequest {
 impl BadRequest {
     fn new(error: Error) -> Self {
         Self {
-            error: format!("{:?}", error),
-            message: format!("{}", error),
+            error: format!("{error:?}"),
+            message: format!("{error}"),
         }
     }
 }
@@ -285,12 +283,11 @@ impl Game {
 
     pub fn get_score(&self) -> HashMap<String, i32> {
         let mut scores = HashMap::new();
-        let game = self.clone();
-        for round in game.rounds {
-            for guess in round.guesses {
+        for round in &self.rounds {
+            for guess in &round.guesses {
                 for answer in guess.answers.iter() {
                     let score = scores.entry(guess.player.clone()).or_insert(0);
-                    if round.answers.contains(&answer) {
+                    if round.answers.contains(answer) {
                         *score += 1;
                     } else {
                         *score -= 1;

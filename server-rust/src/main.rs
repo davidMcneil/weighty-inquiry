@@ -112,10 +112,7 @@ fn rocket(opt: Option<Opt>) -> rocket::Rocket {
         if let Some(questions_file) = opt.questions_file {
             // Populate the questions
             if let Err(e) = questions.populate_from_file(&questions_file) {
-                eprintln!(
-                    "Failed to populate questions from file {:?}, err: {}",
-                    questions_file, e
-                );
+                eprintln!("Failed to populate questions from file {questions_file:?}, err: {e}");
                 std::process::exit(1);
             }
         }
